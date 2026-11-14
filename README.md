@@ -65,19 +65,20 @@ SLMS/
 ## Getting Started
 
 ### Prerequisites
-- JDK 17 or newer (match the version in `pom.xml`)
-- Maven 3.8+
+- JDK 21 (see `pom.xml`) and Maven 3.8+
 - Node.js 18+ and npm
-- The database configured in `application.yml`
 
-### 1. Backend
+### 1. Backend (development)
 
 ```bash
 cd smart-library-backend
 mvn spring-boot:run
 ```
 
-The API starts on `http://localhost:8080` by default.
+The `dev` profile is the default: in-memory H2 database, demo data from `DataSeeder`
+(`admin@library.com`, `librarian@library.com`, `member@library.com`, password `password123`)
+and the H2 console at `/h2-console`. **These accounts exist only in the `dev` profile.**
+The API starts on `http://localhost:8081`.
 
 ### 2. Frontend
 
@@ -87,19 +88,26 @@ npm install
 npm run dev
 ```
 
-The app starts on `http://localhost:5173` by default.
+The app starts on `http://localhost:5173`.
 
-## Configuration
+### 3. Production
 
-Settings live in `smart-library-backend/src/main/resources/application.yml`. Before running, set:
+Run with `SPRING_PROFILES_ACTIVE=prod` and the environment variables listed in `.env.example`
+(database, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS`, and `ADMIN_EMAIL`/`ADMIN_PASSWORD` for the first admin).
+The application refuses to start without `JWT_SECRET`. Generate one with `openssl rand -base64 48`.
 
-- Database URL, username and password
-- JWT secret and expiry
-- Any mail or third-party API keys
+### Tests
 
-**Do not commit real secrets.** Use environment variables or a local, git-ignored configuration file.
+```bash
+cd smart-library-backend
+mvn test
+```
 
-Sample data is loaded on startup by `DataSeeder` and `data.sql`.
+## Security model
+
+- Access tokens last 30 minutes; the frontend refreshes them automatically with a 7-day refresh token.
+- Roles are enforced on the server in `SecurityConfig`; members can only read and change their own data.
+- Never commit real secrets. Anything that was ever committed must be treated as compromised and rotated.
 
 ## Roles
 

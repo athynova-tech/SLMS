@@ -1,0 +1,27 @@
+# Development profile (default). Local only: in-memory H2 database and demo data.
+spring:
+  datasource:
+    url: jdbc:h2:mem:smartlibrary
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+    defer-datasource-initialization: true
+
+# DEV-ONLY signing key. Never reuse it anywhere else. It replaces the key that was committed earlier,
+# which must be treated as compromised.
+jwt:
+  secret: "zRFMNmQN1MhICklyZQZU5FpJWBb8ZO57nXw8rN6YiQiuskw+vIB6QKhnV//E5MzS"
+
+logging:
+  level:
+    com.smartlibrary: DEBUG

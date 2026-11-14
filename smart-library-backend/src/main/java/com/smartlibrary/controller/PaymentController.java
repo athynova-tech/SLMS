@@ -4,6 +4,7 @@ import com.smartlibrary.model.Payment;
 import com.smartlibrary.model.PaymentMethod;
 import com.smartlibrary.model.PaymentStatus;
 import com.smartlibrary.repository.UserRepository;
+import com.smartlibrary.security.CurrentUser;
 import com.smartlibrary.service.PaymentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,9 +20,12 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final UserRepository userRepository;
 
-    public PaymentController(PaymentService paymentService, UserRepository userRepository) {
+    private final CurrentUser currentUser;
+
+    public PaymentController(PaymentService paymentService, UserRepository userRepository, CurrentUser currentUser) {
         this.paymentService = paymentService;
         this.userRepository = userRepository;
+        this.currentUser = currentUser;
     }
 
     @PostMapping("/initiate")
@@ -50,6 +54,7 @@ public class PaymentController {
 
     @PostMapping("/{id}/confirm")
     public ResponseEntity<?> confirmPayment(@PathVariable Long id) {
+        currentUser.requireSelfOrStaff(paymentService.getPayment(id).getUser().getId());
         try {
             Payment payment = paymentService.confirmPayment(id);
             return ResponseEntity.ok(Map.of(
@@ -66,6 +71,7 @@ public class PaymentController {
 
     @PostMapping("/{id}/retry")
     public ResponseEntity<?> retryPayment(@PathVariable Long id) {
+        currentUser.requireSelfOrStaff(paymentService.getPayment(id).getUser().getId());
         try {
             Payment payment = paymentService.retryPayment(id);
             return ResponseEntity.ok(Map.of(

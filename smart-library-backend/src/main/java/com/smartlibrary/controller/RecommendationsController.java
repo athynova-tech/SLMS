@@ -2,6 +2,7 @@ package com.smartlibrary.controller;
 
 import com.smartlibrary.model.Book;
 import com.smartlibrary.repository.BookRepository;
+import com.smartlibrary.security.CurrentUser;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,9 +14,11 @@ import java.util.stream.Collectors;
 public class RecommendationsController {
 
     private final BookRepository bookRepository;
+    private final CurrentUser currentUser;
 
-    public RecommendationsController(BookRepository bookRepository) {
+    public RecommendationsController(BookRepository bookRepository, CurrentUser currentUser) {
         this.bookRepository = bookRepository;
+        this.currentUser = currentUser;
     }
 
     @GetMapping("/book/{bookId}")
@@ -31,6 +34,7 @@ public class RecommendationsController {
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Book>> getForUser(@PathVariable Long userId) {
+        currentUser.requireSelfOrStaff(userId);
         return ResponseEntity.ok(bookRepository.findAvailable().stream()
                 .limit(6)
                 .collect(Collectors.toList()));

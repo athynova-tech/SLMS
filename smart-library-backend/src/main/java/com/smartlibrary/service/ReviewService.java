@@ -35,13 +35,26 @@ public class ReviewService {
         return reviewRepository.getAverageRating(bookId);
     }
 
+    public Review getById(Long reviewId) {
+        return reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found: " + reviewId));
+    }
+
+    private void validateRating(Integer rating) {
+        if (rating == null || rating < 1 || rating > 5) {
+            throw new BadRequestException("Rating must be between 1 and 5");
+        }
+    }
+
     @Transactional
-    public Review create(ReviewRequest request) {
+    public Review create(ReviewRequest request, User author) {
+        validateRating(request.rating());
         Book book = bookRepository.findById(request.bookId())
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
 
         Review review = new Review();
         review.setBook(book);
+        review.setUser(author);
         review.setRating(request.rating());
         review.setComment(request.comment());
         review = reviewRepository.save(review);
@@ -54,10 +67,11 @@ public class ReviewService {
     public Review update(Long reviewId, ReviewRequest request) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Review not found: " + reviewId));
+        validateRating(request.rating());
         review.setRating(request.rating());
         review.setComment(request.comment());
         review = reviewRepository.save(review);
-        updateBookRating(request.bookId());
+        updateBookRating(review.getBook().getId());
         return review;
     }
 

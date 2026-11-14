@@ -1,6 +1,7 @@
 package com.smartlibrary.controller;
 
 import com.smartlibrary.model.*;
+import com.smartlibrary.security.CurrentUser;
 import com.smartlibrary.service.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,9 +13,11 @@ import java.util.List;
 public class EBookController {
 
     private final EBookService ebookService;
+    private final CurrentUser currentUser;
 
-    public EBookController(EBookService ebookService) {
+    public EBookController(EBookService ebookService, CurrentUser currentUser) {
         this.ebookService = ebookService;
+        this.currentUser = currentUser;
     }
 
     @GetMapping
@@ -43,6 +46,7 @@ public class EBookController {
 
     @GetMapping("/{id}/bookmarks")
     public ResponseEntity<List<Bookmark>> getBookmarks(@PathVariable Long id, @RequestParam Long userId) {
+        currentUser.requireSelfOrStaff(userId);
         return ResponseEntity.ok(ebookService.getBookmarks(id, userId));
     }
 
@@ -53,6 +57,7 @@ public class EBookController {
             @RequestParam Integer page,
             @RequestParam(required = false) String note,
             @RequestParam(required = false) String highlightedText) {
+        currentUser.requireSelfOrStaff(userId);
         return ResponseEntity.ok(ebookService.addBookmark(id, userId, page, note, highlightedText));
     }
 

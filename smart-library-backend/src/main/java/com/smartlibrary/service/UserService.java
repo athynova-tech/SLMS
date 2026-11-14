@@ -1,5 +1,6 @@
 package com.smartlibrary.service;
 
+import com.smartlibrary.exception.BadRequestException;
 import com.smartlibrary.exception.ResourceNotFoundException;
 import com.smartlibrary.model.Role;
 import com.smartlibrary.model.User;
@@ -21,15 +22,27 @@ public class UserService {
     }
 
     public User create(String fullName, String email, String password, String phone, String role) {
+        if (fullName == null || fullName.isBlank() || email == null || email.isBlank()) {
+            throw new BadRequestException("Full name and email are required");
+        }
+        if (password == null || password.length() < 8 || password.length() > 72) {
+            throw new BadRequestException("Password must be between 8 and 72 characters");
+        }
         if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Email already registered: " + email);
+            throw new BadRequestException("Email already registered: " + email);
         }
         User user = new User();
-        user.setFullName(fullName);
-        user.setEmail(email);
+        user.setFullName(fullName.trim());
+        user.setEmail(email.trim());
         user.setPassword(passwordEncoder.encode(password));
-        user.setPhone(phone);
-        user.setRole(Role.valueOf(role.toLowerCase()));
+        // Phone is unique in the database: store it only when one was given.
+        if (phone != null && !phone.isBlank()) {
+            if (userRepository.existsByPhone(phone.trim())) {
+                throw new BadRequestException("Phone number already in use");
+            }
+            user.setPhone(phone.trim());
+        }
+        user.setRole(parseRole(role));
         user.setActive(true);
         return userRepository.save(user);
     }
@@ -48,7 +61,15 @@ public class UserService {
     }
 
     public List<User> getByRole(String role) {
-        return userRepository.findByRole(Role.valueOf(role));
+        return userRepository.findByRole(parseRole(role));
+    }
+
+    private Role parseRole(String role) {
+        try {
+            return Role.valueOf(role.trim().toLowerCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new BadRequestException("Unknown role: " + role);
+        }
     }
 
     public User suspend(Long id) {

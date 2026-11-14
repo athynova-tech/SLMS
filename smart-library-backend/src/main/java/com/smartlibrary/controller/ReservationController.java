@@ -1,6 +1,7 @@
 package com.smartlibrary.controller;
 
 import com.smartlibrary.model.Reservation;
+import com.smartlibrary.security.CurrentUser;
 import com.smartlibrary.service.ReservationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,9 +13,11 @@ import java.util.List;
 public class ReservationController {
 
     private final ReservationService reservationService;
+    private final CurrentUser currentUser;
 
-    public ReservationController(ReservationService reservationService) {
+    public ReservationController(ReservationService reservationService, CurrentUser currentUser) {
         this.reservationService = reservationService;
+        this.currentUser = currentUser;
     }
 
     @GetMapping
@@ -24,6 +27,7 @@ public class ReservationController {
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Reservation>> getByUser(@PathVariable Long userId) {
+        currentUser.requireSelfOrStaff(userId);
         return ResponseEntity.ok(reservationService.getByUser(userId));
     }
 
@@ -34,16 +38,19 @@ public class ReservationController {
 
     @PostMapping
     public ResponseEntity<Reservation> create(@RequestParam Long userId, @RequestParam Long bookId) {
+        currentUser.requireSelfOrStaff(userId);
         return ResponseEntity.ok(reservationService.create(userId, bookId));
     }
 
     @PutMapping("/{id}/cancel")
     public ResponseEntity<Reservation> cancel(@PathVariable Long id, @RequestParam Long userId) {
+        currentUser.requireSelfOrStaff(userId);
         return ResponseEntity.ok(reservationService.cancel(id, userId));
     }
 
     @GetMapping("/position")
     public ResponseEntity<Integer> getPosition(@RequestParam Long userId, @RequestParam Long bookId) {
+        currentUser.requireSelfOrStaff(userId);
         return ResponseEntity.ok(reservationService.getPosition(userId, bookId));
     }
 }

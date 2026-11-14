@@ -2,6 +2,7 @@ package com.smartlibrary.controller;
 
 import com.smartlibrary.model.BorrowRecord;
 import com.smartlibrary.dto.BorrowRequest;
+import com.smartlibrary.security.CurrentUser;
 import com.smartlibrary.service.BorrowService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,9 +14,11 @@ import java.util.List;
 public class BorrowController {
 
     private final BorrowService borrowService;
+    private final CurrentUser currentUser;
 
-    public BorrowController(BorrowService borrowService) {
+    public BorrowController(BorrowService borrowService, CurrentUser currentUser) {
         this.borrowService = borrowService;
+        this.currentUser = currentUser;
     }
 
     @GetMapping
@@ -30,6 +33,7 @@ public class BorrowController {
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<BorrowRecord>> getByUser(@PathVariable Long userId) {
+        currentUser.requireSelfOrStaff(userId);
         return ResponseEntity.ok(borrowService.getByUser(userId));
     }
 

@@ -70,8 +70,8 @@ export function AuthProvider({ children }) {
         fullName: data.fullName || data.name,
         email: data.email,
         password: data.password,
-        phoneNumber: data.phoneNumber || '',
-        role: 'MEMBER', // Default to MEMBER for self-registration
+        phone: data.phoneNumber || data.phone || '',
+        address: data.address || '',
       });
       // Registration doesn't log in the user; leave them to go to the login page
       setLoading(false);

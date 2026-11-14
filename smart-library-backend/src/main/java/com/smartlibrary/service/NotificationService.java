@@ -44,6 +44,11 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
+    public Notification getById(Long id) {
+        return notificationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found: " + id));
+    }
+
     public void markRead(Long id) {
         Notification notification = notificationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found: " + id));
