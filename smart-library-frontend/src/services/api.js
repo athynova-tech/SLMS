@@ -1,6 +1,38 @@
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
-async function request(endpoint, options = {}) {
+let refreshPromise = null;
+
+// Exchanges the stored refresh token for a new pair. Shared so parallel 401s trigger one refresh.
+async function refreshTokens() {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) return false;
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    })
+      .then(async (res) => {
+        if (!res.ok) return false;
+        const data = await res.json();
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('refreshToken', data.refreshToken);
+        return true;
+      })
+      .catch(() => false)
+      .finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+}
+
+function endSession() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+  if (window.location.pathname !== '/login') window.location.href = '/login';
+}
+
+async function request(endpoint, options = {}, isRetry = false) {
   const token = localStorage.getItem('token');
   const headers = {
     'Content-Type': 'application/json',
@@ -14,6 +46,14 @@ async function request(endpoint, options = {}) {
       ? { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers }
       : headers,
   });
+
+  // Expired access token: refresh once and repeat the request. Auth endpoints (login, refresh) are excluded.
+  if (res.status === 401 && !isRetry && !endpoint.startsWith('/auth/login') && !endpoint.startsWith('/auth/refresh')) {
+    if (await refreshTokens()) {
+      return request(endpoint, options, true);
+    }
+    endSession();
+  }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
@@ -30,6 +70,7 @@ export const authApi = {
   register: (data) => request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   refresh: (refreshToken) => request('/auth/refresh', { method: 'POST', body: JSON.stringify({ refreshToken }) }),
   me: () => request('/auth/me'),
+  updateMe: (data) => request('/auth/me', { method: 'PUT', body: JSON.stringify(data) }),
   changePassword: (oldPassword, newPassword) =>
     request('/auth/change-password', { method: 'POST', body: JSON.stringify({ oldPassword, newPassword }) }),
   forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),

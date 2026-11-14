@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { authApi, usersApi } from '../../services/api';
+import { authApi } from '../../services/api';
 
 export default function Profile() {
   const { user, logout } = useAuth();
@@ -21,7 +21,7 @@ export default function Profile() {
         setForm({
           fullName: data.fullName || data.name || '',
           email: data.email || '',
-          phoneNumber: data.phoneNumber || '',
+          phoneNumber: data.phone || data.phoneNumber || '',
         });
       } catch (err) {
         console.error('Failed to load profile:', err);
@@ -40,8 +40,7 @@ export default function Profile() {
     setSaving(true);
     setMessage(null);
     try {
-      // Use auth/me update or user update depending on available endpoint
-      await usersApi.activate(user?.id); // placeholder - we need a PUT /users/{id}
+      await authApi.updateMe({ fullName: form.fullName, phone: form.phoneNumber });
       setMessage({ type: 'success', text: 'Profile updated successfully' });
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
@@ -56,8 +55,8 @@ export default function Profile() {
       setPasswordMsg({ type: 'error', text: 'Passwords do not match' });
       return;
     }
-    if (passwordForm.newPass.length < 6) {
-      setPasswordMsg({ type: 'error', text: 'Password must be at least 6 characters' });
+    if (passwordForm.newPass.length < 8) {
+      setPasswordMsg({ type: 'error', text: 'Password must be at least 8 characters' });
       return;
     }
     try {

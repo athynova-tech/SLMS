@@ -32,6 +32,9 @@ public class PaymentService {
                 .orElseThrow(() -> new com.smartlibrary.exception.ResourceNotFoundException("User not found"));
         BorrowRecord borrow = borrowRecordRepository.findById(borrowRecordId)
                 .orElseThrow(() -> new com.smartlibrary.exception.ResourceNotFoundException("Borrow record not found"));
+        if (borrow.getUser() == null || !borrow.getUser().getId().equals(userId)) {
+            throw new IllegalStateException("This loan does not belong to you");
+        }
         if (borrow.getFineAmount() == null || borrow.getFineAmount().compareTo(BigDecimal.ZERO) <= 0 || borrow.getFinePaid()) {
             throw new IllegalStateException("No outstanding fine for this record");
         }
